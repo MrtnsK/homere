@@ -1,32 +1,91 @@
 import { useCallback } from 'react'
 import { useStoryStore } from '../../store/useStoryStore'
 
-function FlagEditor({ label, value, onChange }) {
-  const handleFlagChange = (field, val) => {
-    onChange({ ...value, [field]: val })
+// Détermine si une condition/effet utilise un int ou un bool
+function getValueType(obj, boolKey, intKey) {
+  if (obj?.[intKey] !== null && obj?.[intKey] !== undefined) return 'int'
+  return 'bool'
+}
+
+/**
+ * Éditeur générique pour condition et effet.
+ *
+ * Pour une condition : keys = { bool: 'boolEquals', int: 'intEquals' }
+ * Pour un effet      : keys = { bool: 'setBool',    int: 'setInt'    }
+ */
+function FlagEditor({ label, value, onChange, keys }) {
+  const valueType = getValueType(value, keys.bool, keys.int)
+
+  const handleFlagChange = (e) => {
+    onChange({ ...value, flag: e.target.value })
+  }
+
+  const handleTypeChange = (newType) => {
+    if (newType === 'bool') {
+      onChange({ flag: value?.flag ?? '', [keys.bool]: true, [keys.int]: null })
+    } else {
+      onChange({ flag: value?.flag ?? '', [keys.bool]: null, [keys.int]: 0 })
+    }
+  }
+
+  const handleValueChange = (e) => {
+    if (valueType === 'bool') {
+      onChange({ ...value, [keys.bool]: e.target.value === 'true' })
+    } else {
+      const n = parseInt(e.target.value, 10)
+      onChange({ ...value, [keys.int]: isNaN(n) ? 0 : n })
+    }
   }
 
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-[10px] text-gray-500 w-12 shrink-0">{label}</span>
+      {label && (
+        <span className="text-[10px] text-gray-500 w-10 shrink-0">{label}</span>
+      )}
+      {/* Nom du flag */}
       <input
         type="text"
-        placeholder="nom du flag"
+        placeholder="flag"
         value={value?.flag ?? ''}
-        onChange={(e) => handleFlagChange('flag', e.target.value)}
+        onChange={handleFlagChange}
         className="flex-1 min-w-0 px-2 py-1 text-xs rounded bg-[#0f1117] border border-[#2e3347] text-gray-300 placeholder-gray-600 focus:outline-none focus:border-indigo-500"
       />
+      {/* Type : bool / int */}
       <select
-        value={String(value?.value ?? 'true')}
-        onChange={(e) => handleFlagChange('value', e.target.value === 'true')}
-        className="w-16 px-1 py-1 text-xs rounded bg-[#0f1117] border border-[#2e3347] text-gray-300 focus:outline-none focus:border-indigo-500"
+        value={valueType}
+        onChange={(e) => handleTypeChange(e.target.value)}
+        className="w-14 px-1 py-1 text-xs rounded bg-[#0f1117] border border-[#2e3347] text-gray-400 focus:outline-none focus:border-indigo-500"
       >
-        <option value="true">true</option>
-        <option value="false">false</option>
+        <option value="bool">bool</option>
+        <option value="int">int</option>
       </select>
+      {/* Valeur */}
+      {valueType === 'bool' ? (
+        <select
+          value={String(value?.[keys.bool] ?? 'true')}
+          onChange={handleValueChange}
+          className="w-16 px-1 py-1 text-xs rounded bg-[#0f1117] border border-[#2e3347] text-gray-300 focus:outline-none focus:border-indigo-500"
+        >
+          <option value="true">true</option>
+          <option value="false">false</option>
+        </select>
+      ) : (
+        <input
+          type="number"
+          value={value?.[keys.int] ?? 0}
+          onChange={handleValueChange}
+          className="w-16 px-1 py-1 text-xs rounded bg-[#0f1117] border border-[#2e3347] text-gray-300 focus:outline-none focus:border-indigo-500"
+        />
+      )}
     </div>
   )
 }
+
+const CONDITION_KEYS = { bool: 'boolEquals', int: 'intEquals' }
+const EFFECT_KEYS    = { bool: 'setBool',    int: 'setInt'    }
+
+const makeEmptyCondition = () => ({ flag: '', boolEquals: true, intEquals: null })
+const makeEmptyEffect    = () => ({ flag: '', setBool: true,    setInt: null    })
 
 export default function ChoiceEditor({ nodeId, choice, index, allNodes }) {
   const updateChoice = useStoryStore((s) => s.updateChoice)
@@ -38,19 +97,11 @@ export default function ChoiceEditor({ nodeId, choice, index, allNodes }) {
   )
 
   const handleConditionToggle = useCallback(() => {
-    if (choice.condition) {
-      update('condition', null)
-    } else {
-      update('condition', { flag: '', value: true })
-    }
+    update('condition', choice.condition ? null : makeEmptyCondition())
   }, [choice.condition, update])
 
   const handleEffectToggle = useCallback(() => {
-    if (choice.effects?.length > 0) {
-      update('effects', [])
-    } else {
-      update('effects', [{ flag: '', value: true }])
-    }
+    update('effects', choice.effects?.length > 0 ? [] : [makeEmptyEffect()])
   }, [choice.effects, update])
 
   const updateEffect = useCallback(
@@ -63,7 +114,7 @@ export default function ChoiceEditor({ nodeId, choice, index, allNodes }) {
   )
 
   const addEffect = useCallback(() => {
-    update('effects', [...(choice.effects ?? []), { flag: '', value: true }])
+    update('effects', [...(choice.effects ?? []), makeEmptyEffect()])
   }, [choice.effects, update])
 
   const removeEffect = useCallback(
@@ -75,7 +126,7 @@ export default function ChoiceEditor({ nodeId, choice, index, allNodes }) {
 
   return (
     <div className="border border-[#2e3347] rounded-lg p-3 space-y-2.5 bg-[#0f1117]">
-      {/* Header : numéro + supprimer */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">
           Choix {index + 1}
@@ -117,7 +168,7 @@ export default function ChoiceEditor({ nodeId, choice, index, allNodes }) {
         </select>
       </div>
 
-      {/* Condition */}
+      {/* Condition d'affichage */}
       <div>
         <button
           onClick={handleConditionToggle}
@@ -139,15 +190,15 @@ export default function ChoiceEditor({ nodeId, choice, index, allNodes }) {
         {choice.condition && (
           <div className="mt-1.5">
             <FlagEditor
-              label="Flag :"
               value={choice.condition}
               onChange={(v) => update('condition', v)}
+              keys={CONDITION_KEYS}
             />
           </div>
         )}
       </div>
 
-      {/* Effets */}
+      {/* Effets sur les flags */}
       <div>
         <div className="flex items-center justify-between">
           <button
@@ -185,11 +236,12 @@ export default function ChoiceEditor({ nodeId, choice, index, allNodes }) {
                     label={`[${ei + 1}]`}
                     value={effect}
                     onChange={(v) => updateEffect(ei, v)}
+                    keys={EFFECT_KEYS}
                   />
                 </div>
                 <button
                   onClick={() => removeEffect(ei)}
-                  className="text-gray-600 hover:text-red-400 transition-colors ml-1"
+                  className="text-gray-600 hover:text-red-400 transition-colors ml-1 shrink-0"
                 >
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

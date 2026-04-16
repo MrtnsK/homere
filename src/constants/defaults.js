@@ -25,6 +25,7 @@ export const makeNewNode = (position = { x: 100, y: 100 }) => {
     position,
     data: {
       storyType: NODE_TYPES.MESSAGE,
+      speaker: 'character',
       text: '',
       delay: null,
       choices: [],

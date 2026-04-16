@@ -23,6 +23,7 @@ export function exportStory(meta, startNodeId, rfNodes) {
   const nodes = rfNodes.map((n) => ({
     nodeId: n.id,
     type: n.data.storyType,
+    speaker: n.data.speaker ?? 'character',
     text: n.data.text ?? '',
     delay: n.data.delay ?? null,
     choices: (n.data.choices ?? []).map((c) => ({
