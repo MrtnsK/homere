@@ -30,7 +30,7 @@ export default function NodeEditor({ nodeId }) {
     )
   }
 
-  const { storyType, text, delay, choices = [] } = node.data
+  const { storyType, speaker = 'character', text, delay, choices = [] } = node.data
   const style = NODE_TYPE_STYLES[storyType] ?? NODE_TYPE_STYLES.message
   const isStart = nodeId === startNodeId
 
@@ -59,6 +59,29 @@ export default function NodeEditor({ nodeId }) {
                 className={`flex-1 py-1.5 text-xs rounded-lg border transition-all ${
                   storyType === opt.value
                     ? `${NODE_TYPE_STYLES[opt.value].badge} ${NODE_TYPE_STYLES[opt.value].border}`
+                    : 'bg-[#0f1117] border-[#2e3347] text-gray-500 hover:border-[#4f5a7a] hover:text-gray-300'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Speaker */}
+        <div>
+          <label className="block text-xs text-gray-400 mb-1.5 font-medium">Locuteur</label>
+          <div className="flex gap-1.5">
+            {[
+              { value: 'character', label: 'Personnage' },
+              { value: 'system', label: 'Système' },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => update('speaker', opt.value)}
+                className={`flex-1 py-1.5 text-xs rounded-lg border transition-all ${
+                  speaker === opt.value
+                    ? 'bg-violet-500/20 text-violet-300 border-violet-500'
                     : 'bg-[#0f1117] border-[#2e3347] text-gray-500 hover:border-[#4f5a7a] hover:text-gray-300'
                 }`}
               >

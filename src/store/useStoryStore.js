@@ -30,6 +30,7 @@ const initialNode = {
   position: { x: 300, y: 200 },
   data: {
     storyType: 'message',
+    speaker: 'character',
     text: 'Il était une fois...',
     delay: null,
     choices: [],
@@ -305,6 +306,7 @@ export const useStoryStore = create(
           },
           data: {
             storyType: n.type,
+            speaker: n.speaker ?? 'character',
             text: n.text ?? '',
             delay: n.delay ?? null,
             choices: (n.choices ?? []).map((c) => ({
@@ -335,7 +337,7 @@ export const useStoryStore = create(
           id,
           type: 'storyNode',
           position: { x: 300, y: 200 },
-          data: { storyType: 'message', text: '', delay: null, choices: [] },
+          data: { storyType: 'message', speaker: 'character', text: '', delay: null, choices: [] },
         }
         set({
           meta: { ...DEFAULT_META },
